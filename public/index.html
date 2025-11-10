@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Digital Archive System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1 class="nav-title">🏫 School Digital Archive System</h1>
+      <ul class="nav-menu">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#upload" class="nav-link">Upload</a></li>
+        <li><a href="#archives" class="nav-link">Archives</a></li>
+        <li><a href="#manage" class="nav-link">Manage</a></li>
+        <li><button id="darkModeToggle" class="dark-mode-btn">🌙</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Home/Dashboard Section -->
+    <section id="home" class="section active">
+      <h2>🏠 Dashboard</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Archives</h3>
+          <p id="totalArchives">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Storage</h3>
+          <p id="totalStorage">0 MB</p>
+        </div>
+        <div class="stat-card">
+          <h3>Categories</h3>
+          <p id="totalCategories">0</p>
+        </div>
+      </div>
+
+      <div class="recent-uploads">
+        <h3>Recent Uploads</h3>
+        <div id="recentList"></div>
+      </div>
+
+      <div class="activity-log">
+        <h3>Activity Log</h3>
+        <div id="activityLog"></div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="action-btn" onclick="showSection('upload')">➕ Upload Arsip</button>
+        <button class="action-btn" onclick="showSection('archives')">🔍 Lihat Arsip</button>
+        <button class="action-btn" onclick="showSection('manage')">⚙️ Kelola Data</button>
+      </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="section">
+      <h2>📤 Upload New File</h2>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="file-input-container">
+          <input type="file" id="fileInput" name="file" required>
+          <button type="button" id="clearFile" class="clear-btn" title="Clear file">✕</button>
+        </div>
+        <input type="text" id="filenameInput" name="filename" placeholder="Archive Name" required>
+        <textarea id="descriptionInput" name="description" placeholder="Description"></textarea>
+        <select id="categoryInput" name="category">
+          <option value="Uncategorized">Uncategorized</option>
+        </select>
+        <input type="text" id="uploaderInput" name="uploader" placeholder="Uploader Name" value="Anonymous">
+        <div id="filePreview"></div>
+        <div class="progress-container" style="display: none;">
+          <div class="progress-bar" id="progressBar"></div>
+          <span id="progressText">0%</span>
+        </div>
+        <button type="submit" class="upload-btn">Upload File</button>
+      </form>
+      <div id="uploadMessage"></div>
+    </section>
+
+    <!-- Archives Section -->
+    <section id="archives" class="section">
+      <h2>📂 Archives</h2>
+      <div class="search-filter">
+        <input type="text" id="searchInput" placeholder="Search archives...">
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+        </select>
+        <select id="sortSelect">
+          <option value="date">Sort by Date</option>
+          <option value="filename">Sort by Filename</option>
+        </select>
+        <button id="loadArchives" class="load-btn">Load Archives</button>
+      </div>
+      <table id="archivesTable">
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Description</th>
+            <th>Upload Date</th>
+            <th>Category</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="archivesTableBody"></tbody>
+      </table>
+    </section>
+
+    <!-- Manage Section -->
+    <section id="manage" class="section">
+      <h2>⚙️ Management</h2>
+      <div class="manage-grid">
+        <div class="manage-card">
+          <h3>Categories</h3>
+          <div id="categoriesList"></div>
+          <input type="text" id="newCategoryInput" placeholder="New Category">
+          <button id="addCategoryBtn" class="add-btn">Add Category</button>
+        </div>
+        <div class="manage-card">
+          <h3>Export Data</h3>
+          <button id="exportBtn" class="export-btn">Export to JSON</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal for Archive Details -->
+  <div id="detailsModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Archive Details</h2>
+      <div id="archiveDetails"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
