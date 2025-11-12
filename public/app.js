@@ -124,7 +124,6 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const formData = new FormData();
   const fileInput = document.getElementById('fileInput');
   const filenameInput = document.getElementById('filenameInput');
   const descriptionInput = document.getElementById('descriptionInput');
@@ -141,6 +140,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     return;
   }
 
+  const formData = new FormData();
   formData.append('file', fileInput.files[0]);
   formData.append('filename', filenameInput.value);
   formData.append('description', descriptionInput.value);
@@ -148,48 +148,72 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   formData.append('uploader', uploaderInput.value);
 
   progressContainer.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressText.textContent = '0%';
 
   try {
-    const xhr = new XMLHttpRequest();
+    // Buat stream upload dengan progress tracking
+    const file = fileInput.files[0];
+    const totalSize = file.size;
+    let uploaded = 0;
 
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const percentComplete = (e.loaded / e.total) * 100;
-        progressBar.style.width = percentComplete + '%';
-        progressText.textContent = Math.round(percentComplete) + '%';
+    // Bikin readable stream buat progress
+    const stream = file.stream();
+    const monitoredStream = new ReadableStream({
+      start(controller) {
+        const reader = stream.getReader();
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              controller.close();
+              return;
+            }
+            uploaded += value.length;
+            const percent = (uploaded / totalSize) * 100;
+            progressBar.style.width = percent + '%';
+            progressText.textContent = Math.round(percent) + '%';
+            controller.enqueue(value);
+            read();
+          });
+        }
+        read();
       }
     });
 
-    xhr.addEventListener('load', () => {
-      progressContainer.style.display = 'none';
-      const result = JSON.parse(xhr.responseText);
+    // Bikin body baru (karena FormData nggak bisa stream langsung)
+    const uploadFile = new File([await new Response(monitoredStream).blob()], file.name, { type: file.type });
+    const uploadForm = new FormData();
+    uploadForm.append('file', uploadFile);
+    uploadForm.append('filename', filenameInput.value);
+    uploadForm.append('description', descriptionInput.value);
+    uploadForm.append('category', categoryInput.value);
+    uploadForm.append('uploader', uploaderInput.value);
 
-      if (xhr.status === 200) {
-        uploadMessage.textContent = `File "${result.filename}" uploaded successfully!`;
-        uploadMessage.style.color = 'green';
-        fileInput.value = '';
-        filenameInput.value = '';
-        descriptionInput.value = '';
-        uploaderInput.value = 'Anonymous';
-        document.getElementById('filePreview').innerHTML = '';
-        loadArchives();
-        loadStats();
-        loadRecent();
-        updateActivityLog('Uploaded', result.filename);
-      } else {
-        uploadMessage.textContent = result.error || 'Upload failed.';
-        uploadMessage.style.color = 'red';
-      }
+    const response = await fetch('/upload', {
+      method: 'POST',
+      body: uploadForm
     });
 
-    xhr.addEventListener('error', () => {
-      progressContainer.style.display = 'none';
-      uploadMessage.textContent = 'An error occurred during upload.';
+    progressContainer.style.display = 'none';
+    const result = await response.json();
+
+    if (response.ok) {
+      uploadMessage.textContent = `File "${result.filename}" uploaded successfully!`;
+      uploadMessage.style.color = 'green';
+      fileInput.value = '';
+      filenameInput.value = '';
+      descriptionInput.value = '';
+      uploaderInput.value = 'Anonymous';
+      document.getElementById('filePreview').innerHTML = '';
+      loadArchives();
+      loadStats();
+      loadRecent();
+      updateActivityLog('Uploaded', result.filename);
+    } else {
+      uploadMessage.textContent = result.error || 'Upload failed.';
       uploadMessage.style.color = 'red';
-    });
+    }
 
-    xhr.open('POST', '/upload');
-    xhr.send(formData);
   } catch (error) {
     console.error('Upload error:', error);
     progressContainer.style.display = 'none';
@@ -197,6 +221,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     uploadMessage.style.color = 'red';
   }
 });
+
 
 // Archives table
 async function loadArchives() {
