@@ -49,7 +49,14 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     };
 
     // Upload file to S3
-    await s3.upload(s3Params).promise();
+    const uploadResult = await s3.upload(s3Params).promise();
+
+    // Generate signed URL for the uploaded file
+    const signedUrl = s3.getSignedUrl('getObject', {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: fileKey,
+      Expires: 60 * 60 * 24 * 7 // 7 days expiration
+    });
 
     // Store metadata in DynamoDB
     const dynamoParams = {
@@ -58,6 +65,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         id: uuidv4(),
         filename: req.file.originalname,
         s3Key: fileKey,
+        s3Url: signedUrl,
         size: req.file.size,
         uploadDate: new Date().toISOString(),
         contentType: req.file.mimetype,
@@ -69,7 +77,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
     await dynamodb.put(dynamoParams).promise();
 
-    res.json({ message: 'File uploaded successfully', filename: req.file.originalname });
+    res.json({ message: 'File uploaded successfully', filename: req.file.originalname, s3Url: signedUrl });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Failed to upload file' });
